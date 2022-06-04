@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-
+using System.IO;
 static class Program
 {
     static readonly Dictionary<(Figure, Angle), (int, int)[]> FigureMap = new()
@@ -10,6 +10,15 @@ static class Program
         [(Figure.L, Angle.D90)] = new[] { (0, 0), (-1, 0), (1, 0), (1, -1) },
         [(Figure.L, Angle.D180)] = new[] { (0, 0), (0, 1), (0, -1), (-1, -1) },
         [(Figure.L, Angle.D270)] = new[] { (0, 0), (-1, 0), (1, 0), (-1, 1) },
+        [(Figure.O, Angle.D0)] = new[] { (0, 0), (0, 1), (1, 1), (1, 0) },
+        [(Figure.O, Angle.D90)] = new[] { (0, 0), (0, 1), (1, 1), (1, 0) },
+        [(Figure.O, Angle.D180)] = new[] { (0, 0), (0, 1), (1, 1), (1, 0) },
+        [(Figure.O, Angle.D270)] = new[] { (0, 0), (0, 1), (1, 1), (1, 0) },
+        [(Figure.I, Angle.D0)] = new[] { (0, -2), (0, -1), (0, 0), (0, 1) },
+        [(Figure.I, Angle.D90)] = new[] { (-2, 0), (-1, 0), (0, 0), (1, 0) },
+        [(Figure.I, Angle.D180)] = new[] { (0, -2), (0, -1), (0, 0), (0, 1)},
+        [(Figure.I, Angle.D270)] = new[] {(-2, 0), (-1, 0), (0, 0), (1, 0) },
+        	
     };
     static readonly Dictionary<Angle, Angle> RotateMap = new()
     {
@@ -30,11 +39,13 @@ static class Program
     static Angle _angle;
     static Move _move;
     static long _moveTime;
-    enum Figure
+    enum Figure : byte
     {
         L,
+        O,
+        I,
     }
-    enum Angle
+    enum Angle : short
     {
         D0,
         D90,
@@ -65,12 +76,15 @@ static class Program
 
     private static void NewFigure()
     {
+        _figure = (Figure)_rng.Next(3);
         var x = _field.GetLength(0) / 2;
         var y = 2;
-        if (CanSetFigure(x, y, _angle))
+        var angle = (Angle)_rng.Next(4);
+        if (CanSetFigure(x, y, angle))
         {
             _figureX = x;
             _figureY = y;
+            _angle = angle;
         }
         else
         {
@@ -103,6 +117,9 @@ static class Program
             case ConsoleKey.DownArrow:
                 _move = Move.Down;
                 break;
+
+            case ConsoleKey.S:
+                break;
         }
     }
 
@@ -116,6 +133,7 @@ static class Program
             _moveTime = _currentTime;
             var x = _figureX;
             var y = _figureY;
+            var angle = _angle;
             switch (_move)
             {
                 case Move.None:
@@ -134,24 +152,25 @@ static class Program
                     break;
 
                 case Move.Rotate:
-                    _angle = RotateMap[_angle];
+                    angle = RotateMap[_angle];
                     break;
+
             }
 
-            if (x != _figureX || y != _figureY)
+            if (x != _figureX || y != _figureY || angle != _angle)
             {
                 SetFigure(false);
-                if (CanSetFigure(x, y, _angle))
+                if (CanSetFigure(x, y, angle))
                 {
                     _figureX = x;
                     _figureY = y;
+                    _angle = angle;
                 }
                 SetFigure(true);
             }
 
             _move = Move.None;
         }
-
         var restart = false;
         var descendDelay = 200;
         var descendFigure = _currentTime - _figureTime > descendDelay;
@@ -173,6 +192,25 @@ static class Program
         if (restart)
         {
             NewFigure();
+        }
+
+        for (int row = 0; row < _field.GetLength(0); row++)
+        {
+            var b = true;
+            for (int column = 0; column < _field.GetLength(1); column++)
+            {
+                if (!_field[row, column])
+                {
+                    b = false;
+                }
+            }
+            if (b)
+            {
+                for (int column = 0; column < _field.GetLength(1); column++)
+                {
+                    _field[row, column] = false;
+                }
+            }
         }
     }
     static void SetFigure(bool cell)
@@ -220,6 +258,10 @@ static class Program
 
     static void DrawField()
     {
+        DrawField('#', '.');
+    }
+    static void DrawField(char figure, char empty)
+    {
         Console.SetCursorPosition(0, 0);
         for (int row = 0; row < _field.GetLength(1); row++)
         {
@@ -227,15 +269,32 @@ static class Program
             {
                 if (_field[column, row])
                 {
-                    Console.Write('#');
+                    Console.Write(figure);
                 }
                 else
                 {
-                    Console.Write('.');
+                    Console.Write(empty);
                 }
             }
             Console.WriteLine();
         }
         Console.WriteLine($"{Math.Max(_score, 0):D4}");
     }
+    static void DrawField(ConsoleColor color, char figure, char empty)
+    {
+        Console.ForegroundColor = color;
+        DrawField(figure, empty);
+        Console.ForegroundColor = ConsoleColor.White;
+    }
 }
+/*๐	သုည1	θòʊɴɲa̰	туньа
+1	၁	တစ်	tɪʔ	ти
+2	၂	နှစ်	n̥ɪʔ	хни
+3	၃	သုံး	θóʊɴ	тун
+4	၄	လေး	lé	ле
+5	၅	ငါး	ŋá	нга
+6	၆	ာက်	tɕʰaʊʔ	чхау
+7	၇	ခုနစ်	kʰʊ̀ɴ n̥ɪʔ2	кхуни
+8	၈	ရှစ်	ʃɪʔ	ши
+9	၉	ကိုး	kó	ко
+10	၁၀	ဆယ်	sʰɛ̀	схэ*/
