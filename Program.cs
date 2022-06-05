@@ -16,9 +16,9 @@ static class Program
         [(Figure.O, Angle.D270)] = new[] { (0, 0), (0, 1), (1, 1), (1, 0) },
         [(Figure.I, Angle.D0)] = new[] { (0, -2), (0, -1), (0, 0), (0, 1) },
         [(Figure.I, Angle.D90)] = new[] { (-2, 0), (-1, 0), (0, 0), (1, 0) },
-        [(Figure.I, Angle.D180)] = new[] { (0, -2), (0, -1), (0, 0), (0, 1)},
-        [(Figure.I, Angle.D270)] = new[] {(-2, 0), (-1, 0), (0, 0), (1, 0) },
-        	
+        [(Figure.I, Angle.D180)] = new[] { (0, -2), (0, -1), (0, 0), (0, 1) },
+        [(Figure.I, Angle.D270)] = new[] { (-2, 0), (-1, 0), (0, 0), (1, 0) },
+
     };
     static readonly Dictionary<Angle, Angle> RotateMap = new()
     {
@@ -44,6 +44,7 @@ static class Program
         L,
         O,
         I,
+        Z,
     }
     enum Angle : short
     {
@@ -191,28 +192,41 @@ static class Program
         }
         if (restart)
         {
+            CheckRows();
+            Fall();
             NewFigure();
         }
+    }
 
-        for (int row = 0; row < _field.GetLength(0); row++)
+    private static void CheckRows()
+    {
+        var score = _score;
+        for (int row = 0; row < _field.GetLength(1); row++)
         {
-            var b = true;
-            for (int column = 0; column < _field.GetLength(1); column++)
+            var isRowFilled = true;
+            for (int column = 0; column < _field.GetLength(0); column++)
             {
-                if (!_field[row, column])
+                if (!_field[column, row])
                 {
-                    b = false;
+                    isRowFilled = false;
+                    break;
                 }
             }
-            if (b)
+            if (isRowFilled)
             {
-                for (int column = 0; column < _field.GetLength(1); column++)
+                for (int column = 0; column < _field.GetLength(0); column++)
                 {
-                    _field[row, column] = false;
+                    _field[column, row] = false;
                 }
+                _score++;
             }
         }
+        if (_score - score == 4)
+        {
+            Console.WriteLine("Tetris!");
+        }
     }
+
     static void SetFigure(bool cell)
     {
         var key = (_figure, _angle);
@@ -285,6 +299,40 @@ static class Program
         Console.ForegroundColor = color;
         DrawField(figure, empty);
         Console.ForegroundColor = ConsoleColor.White;
+    }
+    static void DrawField(string figure, string empty)
+    {
+        Console.SetCursorPosition(0, 0);
+        for (int row = 0; row < _field.GetLength(1); row++)
+        {
+            for (int column = 0; column < _field.GetLength(0); column++)
+            {
+                if (_field[column, row])
+                {
+                    Console.Write(figure);
+                }
+                else
+                {
+                    Console.Write(empty);
+                }
+            }
+            Console.WriteLine();
+        }
+        Console.WriteLine($"{Math.Max(_score, 0):D4}");
+    }
+    static void Fall()
+    {
+        for (int row = 0; row < _field.GetLength(1) - 1; row++)
+        {
+            for (int column = 0; column < _field.GetLength(0); column++)
+            {
+                if (_field[column, row] && !_field[column, row + 1])
+                {
+                    _field[column, row] = false;
+                    _field[column, row - 1] = true; 
+                }
+            }
+        }
     }
 }
 /*๐	သုည1	θòʊɴɲa̰	туньа
